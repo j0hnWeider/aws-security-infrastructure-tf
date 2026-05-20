@@ -84,3 +84,34 @@ resource "aws_route_table_association" "public_assoc" {
 }
 
 # Final architectural security layer applied.
+
+# --- SECURITY PERIMETER HARDENING ---
+
+resource "aws_security_group" "internal_app_sg" {
+  name        = "prod-internal-app-sg"
+  description = "Strict firewall rules for private subnet workloads"
+  vpc_id      = aws_vpc.production_vpc.id
+
+  # Ingress: Allow traffic only on HTTPS port from internal network
+  ingress {
+    description = "Allow HTTPS internal traffic"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.production_vpc.cidr_block]
+  }
+
+  # Egress: Restrict outbound traffic to secure web traffic only
+  egress {
+    description = "Allow secure outbound updates"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "prod-app-firewall"
+    Environment = "production"
+  }
+}
